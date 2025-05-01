@@ -1,7 +1,6 @@
-<<<<<<< HEAD
 # ZidioProject1
 Excel Analytics Platform
-=======
+
 # 📊 Excel Analytics Platform
 
 A full-stack MERN application that allows users to upload Excel files, choose columns for analysis, generate dynamic 2D/3D charts, download them, and view their analysis history. Admins can manage users and data, and optionally, the platform supports AI-generated summaries using OpenAI.
