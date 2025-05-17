@@ -1,24 +1,21 @@
-import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import UploadPage from './pages/UploadPage';
+import Dashboard from './pages/Dashboard';
+import Navbar from './components/Navbar';
 import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
+import './index.css';
 
 const App = () => {
   return (
-    <BrowserRouter>
+    <>
+      <Navbar />
       <Routes>
         <Route path="/" element={<AuthPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/Dashboard" element={<Dashboard />} />
+        <Route path="/upload" element={<UploadPage />} />
       </Routes>
-    </BrowserRouter>
+    </>
   );
 };
 

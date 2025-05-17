@@ -1,55 +1,107 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const AuthPage = () => {
-  const [formType, setFormType] = useState("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [isSignup, setIsSignup] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "user", // default role
+  });
+  const navigate = useNavigate();
 
-  const handleAuth = async () => {
-    const endpoint = formType === "login" ? "/api/login" : "/api/register";
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const url = isSignup
+      ? "http://localhost:5000/api/auth/signup" // ✅ Corrected route
+      : "http://localhost:5000/api/auth/login";
+
     try {
-      const res = await axios.post(endpoint, { email, password });
+      const res = await axios.post(url, formData);
       localStorage.setItem("token", res.data.token);
-      alert("Success!");
-      window.location.href = "/dashboard";
+      localStorage.setItem("role", res.data.role);
+
+      // Redirect based on role
+      if (res.data.role === "admin") {
+        navigate("/admin-dashboard");
+      } else {
+        navigate("/user-dashboard");
+      }
     } catch (err) {
-      alert(err.response?.data?.message || "Authentication failed.");
+      alert(err.response?.data?.message || "Authentication Failed");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-purple-100">
-      <div className="bg-white shadow-lg p-8 rounded-lg w-96">
-        <h2 className="text-2xl font-bold mb-4 text-purple-700">
-          {formType === "login" ? "Login" : "Register"}
+    <div className="min-h-screen flex items-center justify-center bg-[#faf5ff]">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-purple-200">
+        <h2 className="text-2xl font-bold text-center mb-6 text-[#6b21a8]">
+          {isSignup ? "Sign Up" : "Log In"}
         </h2>
-        <input
-          className="w-full p-2 border rounded mb-3"
-          type="email"
-          placeholder="Email"
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          className="w-full p-2 border rounded mb-3"
-          type="password"
-          placeholder="Password"
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button
-          onClick={handleAuth}
-          className="w-full bg-purple-700 text-white py-2 rounded hover:bg-purple-800"
-        >
-          {formType === "login" ? "Login" : "Sign Up"}
-        </button>
-        <p className="mt-4 text-sm text-center text-gray-600">
-          {formType === "login" ? "New user?" : "Already have an account?"}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignup && (
+            <>
+              <input
+                type="text"
+                name="name"
+                placeholder="Full Name"
+                onChange={handleChange}
+                required
+                className="w-full p-3 border border-gray-300 rounded-md"
+              />
+              <select
+                name="role"
+                onChange={handleChange}
+                required
+                className="w-full p-3 border border-gray-300 rounded-md"
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </>
+          )}
+
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            onChange={handleChange}
+            required
+            className="w-full p-3 border border-gray-300 rounded-md"
+          />
+
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            onChange={handleChange}
+            required
+            className="w-full p-3 border border-gray-300 rounded-md"
+          />
+
           <button
-            className="text-purple-600 ml-1 underline"
-            onClick={() => setFormType(formType === "login" ? "register" : "login")}
+            type="submit"
+            className="w-full bg-[#6b21a8] text-white py-3 rounded-md hover:bg-[#5a189a] transition"
           >
-            {formType === "login" ? "Register" : "Login"}
+            {isSignup ? "Create Account" : "Login"}
           </button>
+        </form>
+
+        <p className="text-center mt-4 text-sm text-gray-600">
+          {isSignup ? "Already have an account?" : "Don't have an account?"}
+          <span
+            onClick={() => setIsSignup(!isSignup)}
+            className="text-[#6b21a8] cursor-pointer ml-2 font-medium"
+          >
+            {isSignup ? "Log in" : "Sign up"}
+          </span>
         </p>
       </div>
     </div>
