@@ -1,10 +1,42 @@
-# Ignore environment variables
-.env
-
-# Ignore node modules
+# Node.js
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.*  # to cover .env.development, .env.production, etc.
 
-# Optional: OS & editor specific
-.DS_Store
+# Logs
+logs
 *.log
+*.log.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor folders
 .vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Build folders
+dist/
+build/
+out/
+
+# Coverage reports
+coverage/
+
+# React-specific
+*.local
+.cache/
+.eslintcache
+
+# Optional: Ignore uploads or compiled files (if generated during runtime)
+uploads/
+public/uploads/
