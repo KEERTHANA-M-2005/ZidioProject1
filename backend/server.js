@@ -13,9 +13,11 @@ app.use(express.json());
 
 // Routes
 const authRoutes = require("./routes/authRoutes");
+const uploadRoutes = require("./routes/uploadRoutes"); // ✅ ADD THIS
 const { protect } = require("./middleware/authMiddleware");
 
 app.use("/api/auth", authRoutes);
+app.use("/api/upload", uploadRoutes); // ✅ ADD THIS
 
 // Sample protected route
 app.get("/api/protected", protect, (req, res) => {
