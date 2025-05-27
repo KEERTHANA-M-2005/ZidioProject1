@@ -1,12 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios'; // <-- import axios
 import * as XLSX from 'xlsx';
 import { Chart } from 'react-chartjs-2';
 import 'chart.js/auto';
-import { Download } from 'lucide-react'; 
+import { Download } from 'lucide-react';
 
 const chartTypes = ['bar', 'line', 'pie', 'doughnut', 'polarArea', 'radar', 'scatter'];
 
-// Color palette remains as you provided
 const chartColors = [
   '#6b21a8', '#facc15', '#10b981', '#3b82f6', '#ef4444', '#14b8a6', '#eab308', '#8b5cf6',
   '#6366f1', '#ec4899', '#22d3ee', '#f97316'
@@ -18,6 +18,7 @@ const UploadPage = () => {
   const [xAxis, setXAxis] = useState('');
   const [yAxis, setYAxis] = useState('');
   const chartRefs = useRef({});
+  const token = localStorage.getItem('token');
 
   const handleFile = (e) => {
     const selectedFile = e.target.files[0];
@@ -68,6 +69,24 @@ const UploadPage = () => {
     };
   };
 
+  // Track chart generation once a chart type is rendered
+  useEffect(() => {
+    if (!token) return; // no token no tracking
+
+    const chartType = 'Bar Chart'; // you can change this or loop for all types if needed
+    // You might want to track per chartType or for the currently displayed chart
+    // For demo, just track Bar Chart generation
+    if (generateChartData()) {
+      axios.post('/api/user/track-chart', {
+        chartType,
+        excelFileName: data.length > 0 ? 'Uploaded Excel' : 'unknown', // you might want better naming here
+        imageUrl: `/charts/${chartType.toLowerCase().replace(' ', '')}_chart.png`, // dummy url, you can update dynamically if needed
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(console.error);
+    }
+  }, [xAxis, yAxis, data, token]);
+
   const downloadChart = (type) => {
     const chart = chartRefs.current[type];
     if (!chart) return;
@@ -75,6 +94,15 @@ const UploadPage = () => {
     link.download = `${type}_chart.png`;
     link.href = chart.toBase64Image();
     link.click();
+
+    // Track the download
+    if (token) {
+      axios.post('/api/user/track-download', {
+        fileName: 'Uploaded Excel',
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(console.error);
+    }
   };
 
   return (
