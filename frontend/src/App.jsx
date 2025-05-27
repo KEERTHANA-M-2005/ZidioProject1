@@ -4,6 +4,7 @@ import UploadPage from './pages/UploadPage';
 import Dashboard from './pages/Dashboard';
 import Navbar from './components/Navbar';
 import AuthPage from "./pages/AuthPage";
+import ProtectedRoute from "./components/ProtectedRoute"; // ✅ Add this
 import './index.css';
 
 const App = () => {
@@ -12,8 +13,22 @@ const App = () => {
       <Navbar />
       <Routes>
         <Route path="/" element={<AuthPage />} />
-        <Route path="/Dashboard" element={<Dashboard />} />
-        <Route path="/upload" element={<UploadPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/upload"
+          element={
+            <ProtectedRoute>
+              <UploadPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </>
   );
