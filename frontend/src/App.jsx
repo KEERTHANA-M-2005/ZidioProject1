@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import AuthPage from "./pages/AuthPage";
 import ProtectedRoute from "./components/ProtectedRoute"; // ✅ Add this
 import './index.css';
+import './chartjsSetup';
 
 const App = () => {
   return (

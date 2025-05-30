@@ -1,28 +1,41 @@
-import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios'; // <-- import axios
+// src/pages/UploadPage.jsx
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
 import * as XLSX from 'xlsx';
-import { Chart } from 'react-chartjs-2';
-import 'chart.js/auto';
+import MultiChart from '../components/Chart';
+import ThreeDScatterPlot from '../components/ThreeDScatterPlot';
 import { Download } from 'lucide-react';
-
-const chartTypes = ['bar', 'line', 'pie', 'doughnut', 'polarArea', 'radar', 'scatter'];
-
-const chartColors = [
-  '#6b21a8', '#facc15', '#10b981', '#3b82f6', '#ef4444', '#14b8a6', '#eab308', '#8b5cf6',
-  '#6366f1', '#ec4899', '#22d3ee', '#f97316'
-];
 
 const UploadPage = () => {
   const [data, setData] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [xAxis, setXAxis] = useState('');
   const [yAxis, setYAxis] = useState('');
-  const chartRefs = useRef({});
+  const [zAxis, setZAxis] = useState('');
   const token = localStorage.getItem('token');
+  const threeDRef = useRef();
+
+  useEffect(() => {
+    // Load saved state from localStorage
+    const savedData = localStorage.getItem('excelData');
+    const savedHeaders = localStorage.getItem('excelHeaders');
+    const savedXAxis = localStorage.getItem('excelXAxis');
+    const savedYAxis = localStorage.getItem('excelYAxis');
+    const savedZAxis = localStorage.getItem('excelZAxis');
+
+    if (savedData && savedHeaders) {
+      const parsedData = JSON.parse(savedData);
+      setData(parsedData);
+      setHeaders(JSON.parse(savedHeaders));
+      if (savedXAxis) setXAxis(savedXAxis);
+      if (savedYAxis) setYAxis(savedYAxis);
+      if (savedZAxis) setZAxis(savedZAxis);
+    }
+  }, []);
 
   const handleFile = (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile || !selectedFile.name.match(/\.(xlsx|xls)$/)) {
+    const file = e.target.files[0];
+    if (!file || !file.name.match(/\.(xlsx|xls)$/)) {
       alert("Please upload a valid Excel file (.xlsx or .xls)");
       return;
     }
@@ -36,66 +49,59 @@ const UploadPage = () => {
       const parsedData = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
       setData(parsedData);
-      if (parsedData.length > 0) {
-        setHeaders(parsedData[0]);
-        setXAxis(parsedData[0][0]); // default X
-        setYAxis(parsedData[0][1]); // default Y
-      }
+      setHeaders(parsedData[0]);
+      setXAxis(parsedData[0][0]);
+      setYAxis(parsedData[0][1]);
+      setZAxis(parsedData[0][2]);
+
+      // Save to localStorage
+      localStorage.setItem('excelData', JSON.stringify(parsedData));
+      localStorage.setItem('excelHeaders', JSON.stringify(parsedData[0]));
+      localStorage.setItem('excelXAxis', parsedData[0][0]);
+      localStorage.setItem('excelYAxis', parsedData[0][1]);
+      localStorage.setItem('excelZAxis', parsedData[0][2]);
     };
-    reader.readAsBinaryString(selectedFile);
+    reader.readAsBinaryString(file);
   };
 
-  const generateChartData = () => {
+  // Track chart view on backend
+  const generateChartData = useCallback(() => {
     if (!xAxis || !yAxis) return null;
     const xIndex = headers.indexOf(xAxis);
     const yIndex = headers.indexOf(yAxis);
-
     if (xIndex === -1 || yIndex === -1) return null;
 
     const labels = data.slice(1).map(row => row[xIndex]);
     const values = data.slice(1).map(row => Number(row[yIndex]) || 0);
 
-    return {
-      labels,
-      datasets: [
-        {
-          label: `${yAxis} vs ${xAxis}`,
-          data: values,
-          backgroundColor: chartColors,
-          borderColor: chartColors,
-          borderWidth: 1,
-        },
-      ],
-    };
-  };
+    return { labels, values };
+  }, [xAxis, yAxis, headers, data]);
 
-  // Track chart generation once a chart type is rendered
   useEffect(() => {
-    if (!token) return; // no token no tracking
-
-    const chartType = 'Bar Chart'; // you can change this or loop for all types if needed
-    // You might want to track per chartType or for the currently displayed chart
-    // For demo, just track Bar Chart generation
-    if (generateChartData()) {
+    if (!token) return;
+    const chartData = generateChartData();
+    if (chartData) {
       axios.post('/api/user/track-chart', {
-        chartType,
-        excelFileName: data.length > 0 ? 'Uploaded Excel' : 'unknown', // you might want better naming here
-        imageUrl: `/charts/${chartType.toLowerCase().replace(' ', '')}_chart.png`, // dummy url, you can update dynamically if needed
+        chartType: 'Bar Chart',
+        excelFileName: data.length > 0 ? 'Uploaded Excel' : 'unknown',
+        imageUrl: `/charts/bar_chart.png`,
       }, {
         headers: { Authorization: `Bearer ${token}` }
       }).catch(console.error);
     }
-  }, [xAxis, yAxis, data, token]);
+  }, [xAxis, yAxis, data, token, generateChartData]);
 
-  const downloadChart = (type) => {
-    const chart = chartRefs.current[type];
-    if (!chart) return;
+  // 3D Scatter Plot download handler
+  const download3DPlot = () => {
+    if (!threeDRef.current) return;
+    const canvas = threeDRef.current.querySelector('canvas');
+    if (!canvas) return;
+
     const link = document.createElement('a');
-    link.download = `${type}_chart.png`;
-    link.href = chart.toBase64Image();
+    link.download = '3d_scatter_plot.png';
+    link.href = canvas.toDataURL('image/png');
     link.click();
 
-    // Track the download
     if (token) {
       axios.post('/api/user/track-download', {
         fileName: 'Uploaded Excel',
@@ -117,81 +123,57 @@ const UploadPage = () => {
 
       {headers.length > 1 && (
         <div className="mt-4 flex flex-wrap gap-4">
-          <div>
-            <label className="block font-semibold mb-1 text-gray-700">X-Axis</label>
-            <select
-              className="px-4 py-2 border rounded bg-white"
-              value={xAxis}
-              onChange={(e) => setXAxis(e.target.value)}
-            >
-              {headers.map((header, idx) => (
-                <option key={idx} value={header}>{header}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block font-semibold mb-1 text-gray-700">Y-Axis</label>
-            <select
-              className="px-4 py-2 border rounded bg-white"
-              value={yAxis}
-              onChange={(e) => setYAxis(e.target.value)}
-            >
-              {headers.map((header, idx) => (
-                <option key={idx} value={header}>{header}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
-
-      {generateChartData() && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-          {chartTypes.map((type) => (
-            <div key={type} className="p-4 border rounded-xl shadow-lg bg-white">
-             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-semibold capitalize text-gray-700">{type} Chart</h3>
-              <Download
-                size={20}
-                className="cursor-pointer text-purple-700 hover:text-purple-900"
-                onClick={() => downloadChart(type)}
-                title="Download chart"
-              />
-            </div>
-              <Chart
-                ref={(el) => (chartRefs.current[type] = el)}
-                type={type}
-                data={generateChartData()}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {data.length > 0 && (
-        <div className="mt-12 overflow-x-auto">
-          <h3 className="font-semibold text-lg mb-2 text-gray-800">🧾 Data Preview:</h3>
-          <table className="min-w-full border border-gray-300 text-sm shadow">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                {data[0].map((cell, idx) => (
-                  <th key={idx} className="border px-4 py-2 font-semibold">
-                    {cell}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.slice(1).map((row, i) => (
-                <tr key={i} className="hover:bg-gray-50">
-                  {row.map((cell, idx) => (
-                    <td key={idx} className="border px-4 py-2 text-gray-700">
-                      {cell}
-                    </td>
+          {['X-Axis', 'Y-Axis', 'Z-Axis'].map((label, idx) => {
+            const axis = label[0].toLowerCase() + 'Axis'; // xAxis, yAxis, zAxis
+            const val = { xAxis, yAxis, zAxis }[axis];
+            const setVal = { xAxis: setXAxis, yAxis: setYAxis, zAxis: setZAxis }[axis];
+            return (
+              <div key={axis}>
+                <label className="block font-semibold mb-1 text-gray-700">{label}</label>
+                <select
+                  className="px-4 py-2 border rounded bg-white"
+                  value={val}
+                  onChange={(e) => {
+                    setVal(e.target.value);
+                    localStorage.setItem(`excel${label.replace('-', '')}`, e.target.value);
+                  }}
+                >
+                  {headers.map((header, i) => (
+                    <option key={i} value={header}>{header}</option>
                   ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                </select>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 2D Charts */}
+      {data.length > 1 && xAxis && yAxis && (
+        <MultiChart data={data} headers={headers} xAxis={xAxis} yAxis={yAxis} />
+      )}
+
+      {/* 3D Scatter Plot + Download Button */}
+      {data.length > 1 && xAxis && yAxis && zAxis && (
+        <div className="mt-12">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-2xl font-bold text-gray-800">🧊 3D Scatter Plot</h3>
+            <Download
+              size={24}
+              className="cursor-pointer text-purple-700 hover:text-purple-900"
+              onClick={download3DPlot}
+              title="Download 3D Scatter Plot"
+            />
+          </div>
+          <div ref={threeDRef} className="w-full h-[500px] border rounded shadow-lg">
+            <ThreeDScatterPlot
+              data={data}
+              headers={headers}
+              xAxis={xAxis}
+              yAxis={yAxis}
+              zAxis={zAxis}
+            />
+          </div>
         </div>
       )}
     </div>
