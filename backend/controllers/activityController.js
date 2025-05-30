@@ -30,11 +30,12 @@ const trackChartGeneration = async (req, res) => {
 
 // Track file download
 const trackDownload = async (req, res) => {
-  const { fileName } = req.body;
+  const { fileName, chartType, imageUrl } = req.body;
   const userId = req.user._id;
 
   try {
-    const result = await UserActivity.updateOne(
+    // Optional: update downloaded status in uploadedFiles
+    await UserActivity.updateOne(
       { userId, 'uploadedFiles.fileName': fileName },
       {
         $set: {
@@ -44,11 +45,23 @@ const trackDownload = async (req, res) => {
       }
     );
 
-    if (result.modifiedCount === 0) {
-      return res.status(404).json({ message: 'File not found in activity' });
-    }
+    // Push to savedCharts so it appears in frontend
+    await UserActivity.findOneAndUpdate(
+      { userId },
+      {
+        $push: {
+          savedCharts: {
+            chartType: chartType || 'Unknown Chart',
+            excelFileName: fileName,
+            imageUrl: imageUrl || '',
+            generatedAt: new Date(),
+          },
+        },
+      },
+      { upsert: true }
+    );
 
-    res.status(200).json({ message: 'Download activity recorded' });
+    res.status(200).json({ message: 'Download tracked and chart saved' });
   } catch (error) {
     console.error('Download tracking error:', error);
     res.status(500).json({ message: 'Server error while tracking download' });
