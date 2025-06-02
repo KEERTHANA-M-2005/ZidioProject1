@@ -11,20 +11,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// ✅ Import route files
 const authRoutes = require("./routes/authRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
-
-// ADD THIS:
 const activityRoutes = require("./routes/activityRoutes");
+const userRoutes = require("./routes/userRoutes"); // ✅ Add this
 
 const { protect } = require("./middleware/authMiddleware");
 
+// ✅ Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
-
-// ADD THIS:
-app.use("/api/user", activityRoutes);
+app.use("/api/user", userRoutes);        // ✅ This includes /profile and /all
+app.use("/api/activity", activityRoutes); // ✅ Better clarity: move activity to its own base path
 
 // Sample protected route
 app.get("/api/protected", protect, (req, res) => {

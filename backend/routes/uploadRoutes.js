@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { uploadExcelFile } = require('../controllers/uploadController');
+const { uploadExcelFile, getUploadHistory } = require('../controllers/uploadController');
 const { protect } = require('../middleware/authMiddleware');
 
-// Store the file in memory (not in disk)
+// Setup multer to store file in memory
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Route to upload Excel file
+// POST route to upload Excel file
 router.post('/', protect, upload.single('file'), uploadExcelFile);
+
+// GET route to get upload history for logged-in user
+router.get('/history', protect, getUploadHistory);
 
 module.exports = router;

@@ -80,9 +80,33 @@ const getUserActivity = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch activity' });
   }
 };
+// Admin: Get activity of any user by userId param
+const getUserActivityForAdmin = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID parameter is required" });
+    }
+
+    const activity = await UserActivity.findOne({ userId });
+
+    if (!activity) {
+      return res.status(404).json({ message: "No activity found for this user" });
+    }
+
+    res.status(200).json(activity);
+  } catch (error) {
+    console.error('Admin activity fetch error:', error);
+    res.status(500).json({ message: 'Failed to fetch user activity' });
+  }
+};
 
 module.exports = {
   trackChartGeneration,
   trackDownload,
   getUserActivity,
+  getUserActivityForAdmin, // <-- export the new admin function
 };
+
+

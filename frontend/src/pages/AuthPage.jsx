@@ -26,12 +26,13 @@ const AuthPage = () => {
       const res = await axios.post(url, formData);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);
+      localStorage.setItem("userId", res.data.userId); 
 
       // Redirect based on role
       if (res.data.role === "admin") {
         navigate("/admin-dashboard");
       } else {
-        navigate("/user-dashboard");
+        navigate("/Dashboard");
       }
     } catch (err) {
       alert(err.response?.data?.message || "Authentication Failed");

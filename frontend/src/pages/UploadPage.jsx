@@ -57,6 +57,9 @@ const UploadPage = () => {
       localStorage.setItem('excelXAxis', firstRow[0]);
       localStorage.setItem('excelYAxis', firstRow[1]);
       localStorage.setItem('excelZAxis', firstRow[2]);
+
+      // Notify dashboard to refresh upload history after successful file upload
+      localStorage.setItem('refreshHistory', Date.now());
     };
     reader.readAsBinaryString(file);
   };
@@ -84,9 +87,12 @@ const UploadPage = () => {
     }
   }, [xAxis, yAxis, data, token, generateChartData]);
 
-    const handleDownload = () => {
+  const handleDownload = () => {
     if (threeDRef.current?.downloadImage) {
       threeDRef.current.downloadImage();
+
+      // Notify dashboard to refresh upload history after successful download
+      localStorage.setItem('refreshHistory', Date.now());
 
       if (token) {
         axios.post('/api/user/track-download', {
@@ -97,7 +103,6 @@ const UploadPage = () => {
       }
     }
   };
-
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -153,7 +158,6 @@ const UploadPage = () => {
               className="cursor-pointer text-purple-700 hover:text-purple-900"
             >
               <Download size={20} />
-              
             </button>
           </div>
           <ThreeDScatterPlot
