@@ -30,37 +30,41 @@ const trackChartGeneration = async (req, res) => {
 
 // Track file download
 const trackDownload = async (req, res) => {
-  const { fileName, chartType, imageUrl } = req.body;
+  console.log('Received download tracking request. Body:', req.body);
+  const { excelFileName, chartType, imageUrl } = req.body;
   const userId = req.user._id;
 
   try {
     // Optional: update downloaded status in uploadedFiles
-    await UserActivity.updateOne(
-      { userId, 'uploadedFiles.fileName': fileName },
-      {
-        $set: {
-          'uploadedFiles.$.downloaded': true,
-          'uploadedFiles.$.downloadAt': new Date(),
-        },
-      }
-    );
+    // Note: This part seems to be intended for tracking downloads of original uploaded files, not charts.
+    // We might need to clarify if this is necessary or if tracking savedCharts is sufficient.
+    // await UserActivity.updateOne(
+    //   { userId, 'uploadedFiles.fileName': fileName },
+    //   {
+    //     $set: {
+    //       'uploadedFiles.$.downloaded': true,
+    //       'uploadedFiles.$.downloadAt': new Date(),
+    //     },
+    //   }
+    // );
 
     // Push to savedCharts so it appears in frontend
-    await UserActivity.findOneAndUpdate(
+    const updateResult = await UserActivity.findOneAndUpdate(
       { userId },
       {
         $push: {
           savedCharts: {
             chartType: chartType || 'Unknown Chart',
-            excelFileName: fileName,
+            excelFileName: excelFileName || 'N/A',
             imageUrl: imageUrl || '',
             generatedAt: new Date(),
           },
         },
       },
-      { upsert: true }
+      { upsert: true, new: true }
     );
 
+    console.log('User activity updated. Result:', updateResult);
     res.status(200).json({ message: 'Download tracked and chart saved' });
   } catch (error) {
     console.error('Download tracking error:', error);

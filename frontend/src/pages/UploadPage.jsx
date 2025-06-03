@@ -28,40 +28,60 @@ const UploadPage = () => {
     setZAxis(savedZAxis);
   }, []);
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file || !file.name.match(/\.(xlsx|xls)$/)) {
       alert("Please upload a valid Excel file (.xlsx or .xls)");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const bstr = evt.target.result;
-      const wb = XLSX.read(bstr, { type: 'binary' });
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
-      const parsedData = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    const formData = new FormData();
+    formData.append('file', file);
 
-      if (!parsedData.length) return;
+    try {
+      // Upload the file
+      const uploadRes = await axios.post('http://localhost:5000/api/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      const [firstRow] = parsedData;
-      setData(parsedData);
-      setHeaders(firstRow);
-      setXAxis(firstRow[0]);
-      setYAxis(firstRow[1]);
-      setZAxis(firstRow[2]);
+      if (uploadRes.status === 201) {
+        // Parse the file for preview
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const bstr = evt.target.result;
+          const wb = XLSX.read(bstr, { type: 'binary' });
+          const wsname = wb.SheetNames[0];
+          const ws = wb.Sheets[wsname];
+          const parsedData = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-      localStorage.setItem('excelData', JSON.stringify(parsedData));
-      localStorage.setItem('excelHeaders', JSON.stringify(firstRow));
-      localStorage.setItem('excelXAxis', firstRow[0]);
-      localStorage.setItem('excelYAxis', firstRow[1]);
-      localStorage.setItem('excelZAxis', firstRow[2]);
+          if (!parsedData.length) return;
 
-      // Notify dashboard to refresh upload history after successful file upload
-      localStorage.setItem('refreshHistory', Date.now());
-    };
-    reader.readAsBinaryString(file);
+          const [firstRow] = parsedData;
+          setData(parsedData);
+          setHeaders(firstRow);
+          setXAxis(firstRow[0]);
+          setYAxis(firstRow[1]);
+          setZAxis(firstRow[2]);
+
+          localStorage.setItem('excelData', JSON.stringify(parsedData));
+          localStorage.setItem('excelHeaders', JSON.stringify(firstRow));
+          localStorage.setItem('excelXAxis', firstRow[0]);
+          localStorage.setItem('excelYAxis', firstRow[1]);
+          localStorage.setItem('excelZAxis', firstRow[2]);
+
+          // Notify dashboard to refresh history
+          localStorage.setItem('refreshHistory', Date.now().toString());
+          window.dispatchEvent(new Event('storage'));
+        };
+        reader.readAsBinaryString(file);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload file. Please try again.');
+    }
   };
 
   const generateChartData = useCallback(() => {
@@ -77,7 +97,7 @@ const UploadPage = () => {
   useEffect(() => {
     const chartData = generateChartData();
     if (token && chartData) {
-      axios.post('/api/user/track-chart', {
+      axios.post('http://localhost:5000/api/activity/track-chart', {
         chartType: 'Bar Chart',
         excelFileName: data.length > 0 ? 'Uploaded Excel' : 'unknown',
         imageUrl: '/charts/bar_chart.png',
@@ -87,19 +107,34 @@ const UploadPage = () => {
     }
   }, [xAxis, yAxis, data, token, generateChartData]);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (threeDRef.current?.downloadImage) {
-      threeDRef.current.downloadImage();
-
-      // Notify dashboard to refresh upload history after successful download
-      localStorage.setItem('refreshHistory', Date.now());
-
-      if (token) {
-        axios.post('/api/user/track-download', {
-          fileName: 'Uploaded Excel',
-        }, {
+      try {
+        // Get the chart image data
+        console.log('Attempting to download image...');
+        const imageData = await threeDRef.current.downloadImage();
+        console.log('Image data generated:', imageData);
+        
+        // Track the download
+        const downloadPayload = {
+          excelFileName: data.length > 0 ? 'Uploaded Excel' : 'unknown',
+          chartType: '3D Scatter Plot',
+          imageUrl: imageData || '/charts/3d_scatter.png',
+        };
+        console.log('Sending download tracking payload:', downloadPayload);
+        
+        await axios.post('http://localhost:5000/api/activity/track-download', downloadPayload, {
           headers: { Authorization: `Bearer ${token}` }
-        }).catch(console.error);
+        });
+        console.log('Download tracking request sent successfully.');
+
+        // Notify dashboard to refresh history
+        localStorage.setItem('refreshHistory', Date.now().toString());
+        window.dispatchEvent(new Event('storage'));
+        console.log('Storage event dispatched to refresh history.');
+
+      } catch (error) {
+        console.error('Download tracking error:', error);
       }
     }
   };

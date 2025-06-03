@@ -3,6 +3,7 @@ import axios from "axios";
 import MultiChart from "../components/Chart";
 import ThreeDScatterPlot from "../components/ThreeDScatterPlot";
 import UploadHistory from "../components/UploadHistory";
+import DownloadHistory from "../components/DownloadHistory";
 import { useNavigate } from "react-router-dom";
 
 const UserDashboard = () => {
@@ -13,8 +14,9 @@ const UserDashboard = () => {
   const [xAxis, setXAxis] = useState("");
   const [yAxis, setYAxis] = useState("");
   const [zAxis, setZAxis] = useState("");
-  const [downloads, setDownloads] = useState([]);
   const [userId, setUserId] = useState(null);
+  const [activeTab, setActiveTab] = useState("upload"); // 'upload' or 'download'
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // State to trigger history refresh
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -50,19 +52,34 @@ const UserDashboard = () => {
         setZAxis("");
       }
 
-      // Fetch downloads history
-      const downloadsRes = await axios.get(`http://localhost:5000/api/downloads/history/${profileRes.data._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setDownloads(downloadsRes.data);
+      // Download history is fetched by the DownloadHistory component
+
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   }, []);
 
+  // Initial fetch and listen for refresh events
   useEffect(() => {
     fetchHistory();
+
+    const handleStorageChange = (e) => {
+      if (e.key === "refreshHistory") {
+        setRefreshTrigger(prev => prev + 1); // Increment to trigger history fetch in child components
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [fetchHistory]);
+
+  // Fetch history when activeTab changes (to ensure data is loaded when switching tabs)
+  useEffect(() => {
+    // We don't need to re-fetch upload history here as it's already done on initial load and storage event
+    if (activeTab === 'download') {
+       // The DownloadHistory component will fetch its data when refreshTrigger changes
+    }
+  }, [activeTab]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -71,23 +88,42 @@ const UserDashboard = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold">Welcome, {email}</h2>
+      <h2 className="text-2xl font-bold mb-6">Welcome, {email}</h2>
 
-      <UploadHistory refreshHistory={fetchHistory} />
+      {/* History Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab("upload")}
+              className={`${
+                activeTab === "upload"
+                  ? "border-purple-500 text-purple-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              Upload History
+            </button>
+            <button
+              onClick={() => setActiveTab("download")}
+              className={`${
+                activeTab === "download"
+                  ? "border-purple-500 text-purple-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              Download History
+            </button>
+          </nav>
+        </div>
 
-      <div className="mt-4">
-        <h3 className="font-semibold">Downloaded Charts</h3>
-        <ul>
-          {downloads.length > 0 ? (
-            downloads.map((d, i) => (
-              <li key={i}>
-                {d.chartType} from {d.filename} on {new Date(d.timestamp).toLocaleString()}
-              </li>
-            ))
+        <div className="mt-4">
+          {activeTab === "upload" ? (
+            <UploadHistory refreshHistory={refreshTrigger} />
           ) : (
-            <li>No downloads yet</li>
+            <DownloadHistory refreshHistory={refreshTrigger} />
           )}
-        </ul>
+        </div>
       </div>
 
       {selectedFile.length > 0 && (
@@ -124,11 +160,14 @@ const UserDashboard = () => {
       <div className="flex justify-between mt-8">
         <button
           onClick={() => navigate("/upload")}
-          className="bg-purple-600 text-white px-4 py-2 rounded"
+          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
         >
           Upload
         </button>
-        <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded">
+        <button 
+          onClick={handleLogout} 
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+        >
           Logout
         </button>
       </div>
