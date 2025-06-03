@@ -9,9 +9,9 @@ const {
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 // User routes
+router.get('/', protect, getUserActivity);
 router.post('/track-chart', protect, trackChartGeneration);
 router.post('/track-download', protect, trackDownload);
-router.get('/activity', protect, getUserActivity);
 
 // Admin-only route
 router.get('/admin/:userId', protect, adminOnly, getUserActivityForAdmin);

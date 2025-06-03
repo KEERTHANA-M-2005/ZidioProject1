@@ -35,22 +35,12 @@ const UploadHistory = ({ refreshHistory }) => {
           <thead>
             <tr>
               <th className="border border-gray-300 px-4 py-2">Filename</th>
-              <th className="border border-gray-300 px-4 py-2">Rows</th>
-              <th className="border border-gray-300 px-4 py-2">Columns</th>
-              <th className="border border-gray-300 px-4 py-2">Uploaded At</th>
-              <th className="border border-gray-300 px-4 py-2">Summary</th>
             </tr>
           </thead>
           <tbody>
             {history.map((upload, idx) => (
               <tr key={upload._id || idx}>
                 <td className="border border-gray-300 px-4 py-2">{upload.filename}</td>
-                <td className="border border-gray-300 px-4 py-2">{upload.rowCount ?? "N/A"}</td>
-                <td className="border border-gray-300 px-4 py-2">{upload.columnCount ?? "N/A"}</td>
-                <td className="border border-gray-300 px-4 py-2">
-                  {new Date(upload.timestamp || upload.uploadedAt).toLocaleString()}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">{upload.summary || "N/A"}</td>
               </tr>
             ))}
           </tbody>
