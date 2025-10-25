@@ -14,6 +14,6 @@ router.post('/track-chart', protect, trackChartGeneration);
 router.post('/track-download', protect, trackDownload);
 
 // Admin-only route
-router.get('/admin/:userId', protect, adminOnly, getUserActivityForAdmin);
+router.get('/all', protect, adminOnly, getUserActivityForAdmin);
 
 module.exports = router;
