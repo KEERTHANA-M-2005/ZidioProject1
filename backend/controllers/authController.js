@@ -7,26 +7,39 @@ const signup = async (req, res) => {
   const { name, email, password, role } = req.body;
 
   try {
-    // Block direct admin signup: users must request admin approval
-    if (role && role.toLowerCase() === "admin") {
-      return res.status(403).json({ message: "Admin access requires approval from admin: keerthigowli05@gmail.com" });
-    }
-
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Determine the role to assign
+    let assignedRole = 'user'; // Default role
+
+    // Admin signup validation: only allow if credentials match
+    if (role && role.toLowerCase() === "admin") {
+      const adminEmail = "keerthigowli05@gmail.com";
+      const adminPassword = "Keerthi@05";
+
+      // Check if provided credentials match admin credentials
+      if (email !== adminEmail || password !== adminPassword) {
+        return res.status(403).json({ 
+          message: "Admin access requires permission from keerthigowli05@gmail.com" 
+        });
+      }
+      // Credentials match, assign admin role
+      assignedRole = 'admin';
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Force role to 'user' for signups
+    // Create user with assigned role
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role: 'user',
+      role: assignedRole,
     });
 
     // Generate JWT

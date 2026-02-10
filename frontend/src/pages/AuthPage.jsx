@@ -22,12 +22,6 @@ const AuthPage = () => {
       ? "http://localhost:5000/api/auth/signup" // ✅ Corrected route
       : "http://localhost:5000/api/auth/login";
 
-    // Prevent direct admin signup on client too
-    if (isSignup && formData.role === 'admin') {
-      alert('Admin access requires approval from admin: keerthigowli05@gmail.com');
-      return;
-    }
-
     try {
       const res = await axios.post(url, formData);
       localStorage.setItem("token", res.data.token);
