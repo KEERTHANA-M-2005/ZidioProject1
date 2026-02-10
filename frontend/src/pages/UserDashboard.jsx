@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 const UserDashboard = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [selectedFile, setSelectedFile] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [xAxis, setXAxis] = useState("");
@@ -23,11 +24,12 @@ const UserDashboard = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      // Fetch user profile to get email and userId
+      // Fetch user profile to get name, email and userId
       const profileRes = await axios.get("http://localhost:5000/api/user/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      setName(profileRes.data.name || profileRes.data.email);
       setEmail(profileRes.data.email);
       setUserId(profileRes.data._id);
 
@@ -88,7 +90,7 @@ const UserDashboard = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Welcome, {email}</h2>
+      <h2 className="text-2xl font-bold mb-6">Welcome, {name}</h2>
 
       {/* History Tabs */}
       <div className="mb-6">

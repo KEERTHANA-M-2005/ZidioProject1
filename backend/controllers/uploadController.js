@@ -48,6 +48,14 @@ const uploadExcelFile = async (req, res) => {
       { upsert: true }
     );
 
+    // Increment user's uploadCount
+    try {
+      const User = require('../models/User');
+      await User.findByIdAndUpdate(req.user._id, { $inc: { uploadCount: 1 } });
+    } catch (err) {
+      console.warn('Failed to increment uploadCount:', err.message);
+    }
+
     res.status(201).json({ message: 'File uploaded and activity tracked successfully', upload });
 
   } catch (error) {

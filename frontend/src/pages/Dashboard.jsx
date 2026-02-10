@@ -28,6 +28,20 @@ const DashboardRouter = () => {
     };
 
     fetchRole();
+    // Track dashboard visit for analytics
+    (async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        await fetch("http://localhost:5000/api/activity/track-visit", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify({ actionType: 'dashboard_visit' }),
+        });
+      } catch (err) {
+        console.warn('Could not track dashboard visit', err);
+      }
+    })();
   }, [navigate]);
 
   if (loading) return <p>Loading dashboard...</p>;

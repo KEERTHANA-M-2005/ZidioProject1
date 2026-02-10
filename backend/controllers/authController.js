@@ -7,6 +7,11 @@ const signup = async (req, res) => {
   const { name, email, password, role } = req.body;
 
   try {
+    // Block direct admin signup: users must request admin approval
+    if (role && role.toLowerCase() === "admin") {
+      return res.status(403).json({ message: "Admin access requires approval from admin: keerthigowli05@gmail.com" });
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -16,12 +21,12 @@ const signup = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
+    // Force role to 'user' for signups
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role,
+      role: 'user',
     });
 
     // Generate JWT
@@ -35,6 +40,7 @@ const signup = async (req, res) => {
     res.status(201).json({
       token,
       role: user.role,
+      userId: user._id,
       user,
     });
   } catch (error) {
@@ -60,6 +66,13 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Update lastLogin and increment loginCount
+    try {
+      await User.findByIdAndUpdate(user._id, { $inc: { loginCount: 1 }, $set: { lastLogin: new Date() } });
+    } catch (err) {
+      console.warn('Could not update lastLogin/loginCount:', err.message);
+    }
+
     // Generate JWT
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -71,6 +84,7 @@ const login = async (req, res) => {
     res.json({
       token,
       role: user.role,
+      userId: user._id,
       user,
     });
   } catch (error) {

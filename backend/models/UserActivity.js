@@ -20,6 +20,13 @@ const userActivitySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   uploadedFiles: [fileHistorySchema],
   savedCharts: [chartSchema],
+  visits: [
+    {
+      actionType: String,
+      metadata: Object,
+      timestamp: Date,
+    },
+  ],
 });
 
 module.exports = mongoose.model('UserActivity', userActivitySchema);

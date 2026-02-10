@@ -19,6 +19,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "user", // can be "admin" or "user"
   },
+  lastLogin: {
+    type: Date,
+    default: null,
+  },
+  loginCount: {
+    type: Number,
+    default: 0,
+  },
+  uploadCount: {
+    type: Number,
+    default: 0,
+  },
 }, {
   timestamps: true, // Adds createdAt and updatedAt fields
 });

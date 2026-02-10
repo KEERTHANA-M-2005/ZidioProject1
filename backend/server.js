@@ -16,6 +16,7 @@ const authRoutes = require("./routes/authRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const activityRoutes = require("./routes/activityRoutes");
 const userRoutes = require("./routes/userRoutes"); // ✅ Add this
+const adminRoutes = require('./routes/adminRoutes');
 
 const { protect } = require("./middleware/authMiddleware");
 
@@ -24,6 +25,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/user", userRoutes);        // ✅ This includes /profile and /all
 app.use("/api/activity", activityRoutes); // ✅ Better clarity: move activity to its own base path
+app.use('/api/admin', adminRoutes);
 
 // Sample protected route
 app.get("/api/protected", protect, (req, res) => {

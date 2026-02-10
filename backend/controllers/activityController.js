@@ -72,6 +72,25 @@ const trackDownload = async (req, res) => {
   }
 };
 
+// Track generic visit or action (dashboard visit, login visit etc.)
+const trackVisit = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { actionType, metadata } = req.body;
+
+    await UserActivity.findOneAndUpdate(
+      { userId },
+      { $push: { visits: { actionType, metadata: metadata || {}, timestamp: new Date() } } },
+      { upsert: true }
+    );
+
+    res.status(200).json({ message: 'Visit tracked' });
+  } catch (err) {
+    console.error('Track visit error:', err);
+    res.status(500).json({ message: 'Failed to track visit' });
+  }
+};
+
 // Get full user activity
 const getUserActivity = async (req, res) => {
   try {
@@ -106,11 +125,53 @@ const getUserActivityForAdmin = async (req, res) => {
   }
 };
 
+// Admin: Get all users' activities in flattened form
+const getAllActivities = async (req, res) => {
+  try {
+    const activities = await UserActivity.find().populate('userId', 'name email');
+
+    // Flatten into a consistent array of activity events
+    const flattened = [];
+
+    activities.forEach((act) => {
+      const email = act.userId ? act.userId.email : 'Unknown';
+
+      (act.uploadedFiles || []).forEach((f) => {
+        flattened.push({
+          email,
+          action: 'upload',
+          details: { fileName: f.fileName, fileUrl: f.fileUrl },
+          timestamp: f.uploadedAt,
+        });
+      });
+
+      (act.savedCharts || []).forEach((c) => {
+        flattened.push({
+          email,
+          action: 'chart',
+          details: { chartType: c.chartType, excelFileName: c.excelFileName, imageUrl: c.imageUrl },
+          timestamp: c.generatedAt,
+        });
+      });
+    });
+
+    // Sort recent first
+    flattened.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.status(200).json(flattened);
+  } catch (error) {
+    console.error('Fetch all activities error:', error);
+    res.status(500).json({ message: 'Failed to fetch activities' });
+  }
+};
+
 module.exports = {
   trackChartGeneration,
   trackDownload,
   getUserActivity,
-  getUserActivityForAdmin, // <-- export the new admin function
+  getUserActivityForAdmin,
+  getAllActivities,
+  trackVisit,
 };
 
 

@@ -4,16 +4,20 @@ import UploadPage from './pages/UploadPage';
 import Dashboard from './pages/Dashboard';
 import Navbar from './components/Navbar';
 import AuthPage from "./pages/AuthPage";
+import LandingPage from './pages/LandingPage';
 import ProtectedRoute from "./components/ProtectedRoute"; // ✅ Add this
 import './index.css';
 import './chartjsSetup';
 
 const App = () => {
+  const token = localStorage.getItem('token');
+
   return (
     <>
-      <Navbar />
+      {token && <Navbar />}
       <Routes>
-        <Route path="/" element={<AuthPage />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/auth" element={<AuthPage />} />
         <Route
           path="/dashboard"
           element={

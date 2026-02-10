@@ -4,7 +4,9 @@ const {
   trackChartGeneration,
   trackDownload,
   getUserActivity,
-  getUserActivityForAdmin, // 👈 Make sure this controller exists
+  getUserActivityForAdmin,
+  getAllActivities,
+  trackVisit,
 } = require('../controllers/activityController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
@@ -12,8 +14,9 @@ const { protect, adminOnly } = require('../middleware/authMiddleware');
 router.get('/', protect, getUserActivity);
 router.post('/track-chart', protect, trackChartGeneration);
 router.post('/track-download', protect, trackDownload);
+router.post('/track-visit', protect, trackVisit);
 
-// Admin-only route
-router.get('/all', protect, adminOnly, getUserActivityForAdmin);
+// Admin-only route: return flattened list of all activities
+router.get('/all', protect, adminOnly, getAllActivities);
 
 module.exports = router;

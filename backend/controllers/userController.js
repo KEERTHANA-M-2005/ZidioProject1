@@ -22,7 +22,7 @@ const getUserProfile = async (req, res) => {
 // ✅ Controller: Admin fetches all users
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}, "name email role createdAt");
+    const users = await User.find({}, "name email role createdAt lastLogin loginCount uploadCount");
     res.json(users);
   } catch (error) {
     console.error("Get all users error:", error);

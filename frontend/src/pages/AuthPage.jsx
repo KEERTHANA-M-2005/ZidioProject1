@@ -22,6 +22,12 @@ const AuthPage = () => {
       ? "http://localhost:5000/api/auth/signup" // ✅ Corrected route
       : "http://localhost:5000/api/auth/login";
 
+    // Prevent direct admin signup on client too
+    if (isSignup && formData.role === 'admin') {
+      alert('Admin access requires approval from admin: keerthigowli05@gmail.com');
+      return;
+    }
+
     try {
       const res = await axios.post(url, formData);
       localStorage.setItem("token", res.data.token);
@@ -29,11 +35,8 @@ const AuthPage = () => {
       localStorage.setItem("userId", res.data.userId); 
 
       // Redirect based on role
-      if (res.data.role === "admin") {
-        navigate("/admin-dashboard");
-      } else {
-        navigate("/Dashboard");
-      }
+      // Route to dashboard; DashboardRouter will render Admin or User view
+      navigate("/dashboard");
     } catch (err) {
       alert(err.response?.data?.message || "Authentication Failed");
     }
@@ -66,6 +69,9 @@ const AuthPage = () => {
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
               </select>
+              {formData.role === 'admin' && (
+                <p className="text-xs text-red-600 mt-2">Admin access requires approval from admin: keerthigowli05@gmail.com</p>
+              )}
             </>
           )}
 
